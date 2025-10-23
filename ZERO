@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الباحث عن التوافق الكامل للشاشات</title>
+    <!-- تحميل Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- تعيين خط Cairo وبعض الإعدادات الأساسية لـ Tailwind -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f7f9fb;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 min-h-screen flex items-start justify-center">
+
+    <div class="w-full max-w-lg bg-white shadow-xl rounded-2xl p-6 sm:p-8">
+        <h1 class="text-3xl font-extrabold text-gray-900 mb-2 text-center">
+            <svg class="w-8 h-8 inline-block ml-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.27a8.6 8.6 0 00-11.83 0A8.6 8.6 0 003 12c0 4.25 3.33 7.73 7.5 7.95V21h3v-1.05c4.17-.22 7.5-3.7 7.5-7.95c0-2.3-1.0-4.38-2.6-5.83z"></path></svg>
+            الباحث عن التوافق الكامل للشاشات
+        </h1>
+        <p class="text-gray-600 mb-6 text-center">أدخل اسم الشاشة أو رقم القطعة للحصول على قائمة الهواتف ذات التوافق الكامل (100%).</p>
+
+        <!-- حقل إدخال اسم الشاشة/القطعة -->
+        <div class="mb-4">
+            <label for="screenPartInput" class="block text-sm font-medium text-gray-700 mb-2">اسم الشاشة أو رقم القطعة (مثال: شاشة Samsung A507F)</label>
+            <input type="text" id="screenPartInput" placeholder="أدخل اسم الشاشة هنا..."
+                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                   required>
+        </div>
+
+        <!-- زر البحث -->
+        <button id="searchButton" onclick="searchForCompatiblePhones()"
+                class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
+            <svg id="searchIcon" class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span id="buttonText">ابحث عن الهواتف ذات التوافق الكامل</span>
+        </button>
+
+        <!-- منطقة عرض النتائج -->
+        <div id="resultsArea" class="mt-8 pt-6 border-t border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <svg class="w-6 h-6 ml-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                النتائج (توافق 100% دون تعديل)
+            </h2>
+            <div id="resultContent" class="bg-gray-50 p-4 rounded-xl text-gray-700 min-h-[100px] flex flex-col items-center justify-center text-center transition-all duration-300">
+                <p>النتائج ستظهر هنا بعد إدخال اسم الشاشة والبحث.</p>
+            </div>
+            <!-- مصدر المعلومات (Citations) -->
+            <div id="citations" class="mt-4 text-xs text-gray-500 hidden">
+                <p class="font-semibold mb-1">مصادر البحث:</p>
+                <ul id="sourcesList" class="list-disc pr-5 space-y-1">
+                    <!-- المصادر ستُضاف هنا -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // استخدام مفتاح API المقدم من المستخدم
+        const apiKey = "AIzaSyC13ybMYJEicksjR1aBwkKFpr3BJQGPMhU";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        const screenPartInput = document.getElementById('screenPartInput');
+        const searchButton = document.getElementById('searchButton');
+        const buttonText = document.getElementById('buttonText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const searchIcon = document.getElementById('searchIcon');
+        const resultContent = document.getElementById('resultContent');
+        const citationsDiv = document.getElementById('citations');
+        const sourcesList = document.getElementById('sourcesList');
+
+        /**
+         * تحويل واجهة المستخدم إلى حالة التحميل.
+         */
+        function setLoading(isLoading) {
+            searchButton.disabled = isLoading;
+            if (isLoading) {
+                loadingSpinner.classList.remove('hidden');
+                searchIcon.classList.add('hidden');
+                buttonText.textContent = 'جاري البحث...';
+                searchButton.classList.add('opacity-75');
+            } else {
+                loadingSpinner.classList.add('hidden');
+                searchIcon.classList.remove('hidden');
+                buttonText.textContent = 'ابحث عن الهواتف ذات التوافق الكامل';
+                searchButton.classList.remove('opacity-75');
+            }
+        }
+
+        /**
+         * مسح وتحديث منطقة عرض النتائج.
+         * @param {string} htmlContent - محتوى HTML المراد عرضه.
+         * @param {Array<Object>} sources - مصفوفة من كائنات المصادر للاقتباسات.
+         */
+        function displayResults(htmlContent, sources = []) {
+            resultContent.innerHTML = htmlContent;
+
+            // التعامل مع المصادر
+            sourcesList.innerHTML = '';
+            citationsDiv.classList.add('hidden');
+
+            if (sources && sources.length > 0) {
+                sources.forEach(source => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `<a href="${source.uri}" target="_blank" class="text-blue-500 hover:text-blue-700 underline">${source.title || source.uri}</a>`;
+                    sourcesList.appendChild(listItem);
+                });
+                citationsDiv.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * الوظيفة الرئيسية لاستدعاء واجهة برمجة تطبيقات Gemini والبحث عن الهواتف المتوافقة.
+         */
+        async function searchForCompatiblePhones() {
+            const screenPart = screenPartInput.value.trim();
+            if (!screenPart) {
+                displayResults('<p class="text-red-600 font-bold">يرجى إدخال اسم الشاشة أو رقم القطعة المراد البحث عنه.</p>');
+                return;
+            }
+
+            setLoading(true);
+            displayResults('<div class="flex flex-col items-center justify-center space-y-2"><p>الباحث الذكي يعمل... قد يستغرق الأمر بضع ثوانٍ.</p><div class="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div></div>');
+
+            // إنشاء استعلام المستخدم التفصيلي باللغة الإنجليزية
+            const userQuery = `Find all specific phone models that use the exact same screen assembly or part number: ${screenPart} without any modification needed (100% cross-compatibility). Provide only a bulleted list of the compatible phone model names, followed by the total count of devices in the format: "Total Count: X". Do not include any other text, explanation, or introduction.`;
+            
+            // التعليمات النظامية (System Instruction) الصارمة بالعربية لضمان الحد الأدنى من الإخراج
+            const systemPrompt = "أنت مساعد فني متخصص بالصاشات. مهمتك الوحيدة هي إرجاع قائمة الهواتف ذات التوافق الكامل (100% بدون تعديل) مع الجزء المُدخل. **الإخراج يجب أن يكون باللغة العربية ويتكون حصرياً من:** 1. قائمة نقطية لأسماء الهواتف الكاملة (مثل Samsung A510F). 2. سطر واحد يحتوي على العدد الإجمالي للنتائج في النهاية. **لا تكتب أي مقدمة، شرح، تفاصيل تقنية، أو جمل إضافية أخرى.**";
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                // استخدام Google Search grounding للحصول على بيانات في الوقت الفعلي
+                tools: [{ "google_search": {} }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+
+            const maxRetries = 3;
+            let currentRetry = 0;
+            let result = null;
+
+            while (currentRetry < maxRetries) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    result = await response.json();
+                    break; // الخروج من الحلقة عند النجاح
+
+                } catch (error) {
+                    console.error(`Attempt ${currentRetry + 1} failed:`, error);
+                    currentRetry++;
+                    if (currentRetry < maxRetries) {
+                        const delay = Math.pow(2, currentRetry) * 1000; // تأخير أُسي
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    } else {
+                        displayResults('<p class="text-red-600 font-bold">عذراً، فشلت عملية الاتصال بالخادم بعد عدة محاولات. يرجى التحقق من اتصالك بالإنترنت والمحاولة لاحقاً.</p>');
+                        setLoading(false);
+                        return;
+                    }
+                }
+            }
+
+            setLoading(false);
+
+            const candidate = result?.candidates?.[0];
+
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+                let text = candidate.content.parts[0].text.trim();
+                let sources = [];
+                const groundingMetadata = candidate.groundingMetadata;
+
+                if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                    sources = groundingMetadata.groundingAttributions
+                        .map(attribution => ({
+                            uri: attribution.web?.uri,
+                            title: attribution.web?.title,
+                        }))
+                        .filter(source => source.uri && source.title);
+                }
+
+                let listHtml = '';
+                let countLine = '';
+                let lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+
+                // فصل الأسطر التي تبدأ بعلامة نقطية (قائمة) عن سطر العدد الإجمالي
+                lines.forEach(line => {
+                    if (line.startsWith('*')) {
+                        listHtml += `<li>${line.substring(1).trim()}</li>`;
+                    } else if (line.includes('Total Count:') || line.includes('العدد الإجمالي:')) {
+                        // استخدام السطر الذي يحتوي على العدد الإجمالي
+                        countLine = line;
+                    }
+                });
+
+                if (listHtml.length > 0) {
+                    let finalHtml = `<ul class="list-disc pr-5 space-y-2 text-right w-full">${listHtml}</ul>`;
+                    if (countLine) {
+                        finalHtml += `<p class="mt-4 font-bold text-lg text-indigo-700 w-full text-center">${countLine}</p>`;
+                    }
+                    displayResults(finalHtml, sources);
+                } else if (text.includes('لا توجد هواتف محددة معروفة') || text.includes('لا توجد توافقات')) {
+                     displayResults('<p class="text-orange-600 font-bold">لا توجد هواتف محددة معروفة تستخدم هذا الجزء بتوافق كامل 100%.</p>');
+                } else {
+                    // رسالة احتياطية في حال تجاهل الذكاء الاصطناعي التعليمات
+                    displayResults('<p class="text-orange-600 font-bold">لم نتمكن من استخراج قائمة دقيقة. يرجى المحاولة باسم مختلف أو رقم قطعة أدق.</p>');
+                }
+
+            } else {
+                displayResults('<p class="text-orange-600 font-bold">حدث خطأ أو لم يتم العثور على نتائج محددة لهذا الجزء. يرجى التأكد من كتابة الاسم كاملاً ودقيقاً.</p>');
+            }
+        }
+
+        // إضافة مستمع حدث لمفتاح Enter على حقل الإدخال
+        screenPartInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                searchForCompatiblePhones();
+            }
+        });
+    </script>
+</body>
+</html>
